@@ -22,7 +22,7 @@ import torch.nn.functional as F
 import torchvision.transforms as T
 
 
-env = gym.make('CartPole-v0').unwrapped
+env = gym.make('CartPole-v1').unwrapped
 env.max_episode_steps = 300
 # set up matplotlib
 is_ipython = 'inline' in matplotlib.get_backend()
@@ -129,11 +129,11 @@ plt.show()
 
 
 BATCH_SIZE = 16
-GAMMA = 0.9
+GAMMA = 0.99
 EPS_START = 0.9
 EPS_END = 0.01
-EPS_DECAY = 500
-TARGET_UPDATE = 200
+EPS_DECAY = 2000
+TARGET_UPDATE = 50
 
 policy_net = DQN().to(device)
 target_net = DQN().to(device)
@@ -142,7 +142,7 @@ target_net.eval()
 
 #optimizer = optim.RMSprop(policy_net.parameters(), lr=1e-2)
 optimizer = optim.Adam(policy_net.parameters())
-memory = ReplayMemory(3000)
+memory = ReplayMemory(1000)
 
 steps_done = 0
 
@@ -215,7 +215,7 @@ def optimize_model():
         param.grad.data.clamp_(-1, 1)
     optimizer.step()
 
-num_episodes = 500
+num_episodes = 2000
 for i_episode in range(num_episodes):
     # Initialize the environment and state
     env.reset()
