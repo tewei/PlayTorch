@@ -21,7 +21,7 @@ SOS_token = 0
 EOS_token = 1
 UNK_token = 2
 MAX_LEN = 200
-BATCH_SIZE = 64
+BATCH_SIZE = 256
 
 def prep_word_vectors():
     word2vec = Word2Vec.load('emb/w2vwiki2018.model')
@@ -119,12 +119,25 @@ class NLU_classifier():
         loss = self.loss_func(target_tensor, predict_tensor)
         return loss
 
+    def eval(self, input_tensor):
+        encoder_hidden = self.encoder.initHidden() #zero for 1st token
+        predict_tensor = self.encoder.initOut()
+        input_length = input_tensor.size(0)
+        
+        for ei in range(input_length):
+            encoder_output, encoder_hidden, predict_tensor = self.encoder(input_tensor[ei], encoder_hidden)
+
+        return predict_tensor
+
+    def load_model(self, model_path="nlu_encoder.pt"):
+        self.encoder.load_state_dict(torch.load(model_path))
+        
     def train(self, lr=1e-4, epochs=100):
         self.encoder_opt = optim.Adam(self.encoder.parameters(), lr=lr)
 
         data_x = [self.sent2tensor(p[0]) for p in self.dataset]
         data_y = [self.label2list(p[1]) for p in self.dataset]
-        print (len(data_x), len(data_y))
+        #print (len(data_x), len(data_y))
 
         
         train_seq, val_seq, test_seq = self.train_test_split()
@@ -133,6 +146,8 @@ class NLU_classifier():
         #train_loader = Data.DataLoader(dataset=torch_dataset, batch_size=1, shuffle=True, num_workers=2)
         for e in range(epochs):
             epoch_loss = 0
+            #train
+            start = time.time()
             for step in range(math.floor(len(train_seq)/BATCH_SIZE)):
                 next_batch = train_seq[step*BATCH_SIZE:(step + 1)*BATCH_SIZE]
                 loss = 0
@@ -144,8 +159,24 @@ class NLU_classifier():
                 self.encoder_opt.step()
                 epoch_loss += loss.item()
                 loss = 0
+                #print (step)
 
-            print ('epoch: '+str(e)+' loss = '+str(epoch_loss))
+            print('%s (%d epochs %d%% done) loss = %.4f' % (timeSince(start, e+1/epochs), e+1, e+1/epochs* 100, epoch_loss))
+            torch.save(self.encoder.state_dict(), 'nlu_encoder.pt')
+            
+            #validate
+            correct_predictions = 0
+            total_predictions = 0
+            for s in range(math.floor(len(val_seq))):
+                predict_tensor = self.eval(data_x[s])
+                result = torch.topk(predict_tensor, 3, dim=1)[1].squeeze(0)
+                for l in result:
+                    if l in data_y[s]:
+                        correct_predictions += 1
+                total_predictions += 3
+
+            print ('val_prec@3 = %.4f %%' % (correct_predictions/total_predictions*100))
+
 
 
     # def eval(self, input_tensor):
