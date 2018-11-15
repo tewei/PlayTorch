@@ -100,9 +100,7 @@ class EncoderRNN(nn.Module):
         embedded = self.embedding(input).view(1, 1, -1)
         output = embedded
         output, hidden = self.gru(output, hidden) 
-        #GRU input dim is (seq_len, batch, input_size)
-        #output is (seq_len, batch, num_directions*hidden_size)
-        #hidden is (num_layers*num_directions, batch, hidden_size)
+        #GRU input / output dim is (batch, seq, feature) when batch_first=True
         return output, hidden
 
     def initHidden(self):
