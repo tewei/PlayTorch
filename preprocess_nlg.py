@@ -57,7 +57,7 @@ def clean_data():
         sent_tok = word_tokenize(raw_data[i][3].lower())
         if len(sent_tok) > 0 and len(row_labels) > 0 and raw_data[i][2] == 'agent' and raw_data[i-1][0] == raw_data[i][0]:
             input_sent_tok = word_tokenize(raw_data[i-1][3].lower())
-            real_data.append((row_labels, input_sent_tok, sent_tok))
+            real_data.append((row_labels, sent_tok))
     
     new_real_data = []
     new_label_list = []
@@ -76,7 +76,7 @@ def clean_data():
                     new_label_cnt[l] += 1
         
         if len(new_labels) > 0:
-            new_real_data.append((new_labels, p[1], p[2]))
+            new_real_data.append((new_labels, p[1]))
 
     return new_label_idx, new_label_list, new_label_cnt, new_real_data
 
